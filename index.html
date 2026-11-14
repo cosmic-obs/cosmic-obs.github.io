@@ -59,23 +59,6 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
   font: 400 12px var(--font-data); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
   font-variant-numeric: tabular-nums;
 }
-/* follows the mouse while an object is picked: where it is at the point under the pointer */
-.tip {
-  position: fixed; z-index: 4; left: 0; top: 0; margin: 0; padding: 8px 10px; pointer-events: none; width: 300px;
-  font: 400 12px/1.4 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink);
-  background: rgba(9, 15, 28, 0.94); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-}
-.tip b { display: block; color: var(--accent); font-weight: 600; }
-.tip .sub2 { margin: 1px 0 6px; color: var(--soft); font-size: 11px; line-height: 1.45; }
-.tip-row { display: flex; align-items: center; gap: 10px; }
-.tip dl { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; }
-.tip dd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#tip-dial { flex: none; width: 84px; height: 84px; }
-#tip-curve, #tip-year { display: block; width: 100%; height: 74px; margin-top: 8px; }
-.tip dt { color: var(--soft); }
-.tip dd { margin: 0; }
-.tip .yes { color: var(--accent); }
-
 .panel {
   position: fixed; z-index: 3; left: 12px; right: 12px; bottom: calc(var(--bar-h, 52px) + 10px);
   max-width: 440px; margin-inline: auto; padding: 14px 16px 15px;
@@ -90,15 +73,18 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
 .x { background: none; border: 0; color: var(--soft); font-size: 22px; line-height: 1; padding: 0 2px; cursor: pointer; }
 .panel p { margin: 0; }
 .sub { color: var(--soft); font-size: 13px; margin-top: 2px !important; }
-.facts { margin: 12px 0 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.facts div { min-width: 0; }
-.facts dt { font: 500 10px/1.3 var(--font-data); letter-spacing: 0.06em; text-transform: uppercase; color: var(--soft); }
-.facts dd { margin: 3px 0 0; font: 500 14px/1.3 var(--font-data); font-variant-numeric: tabular-nums; }
-.night { font-size: 14px; }
-.coords { margin-top: 8px !important; color: var(--soft); font: 400 12px var(--font-data); }
-.vis { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
-.vis canvas { display: block; width: 100%; height: 78px; }
-.vis p { margin-top: 6px !important; color: var(--soft); font-size: 12px; }
+/* the picked object: what it is, then where it is at the moment under the mouse (or last tapped) */
+.panel.dialog.objcard { width: min(360px, calc(100% - 52px)); padding: 11px 13px 12px; }
+.objcard .panel-top b { font-size: 15px; }
+.obj-facts { margin: 2px 0 0 !important; color: var(--soft); font: 400 11px/1.45 var(--font-data); }
+.obj-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.objcard dl { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font: 400 12px/1.4 var(--font-data); font-variant-numeric: tabular-nums; }
+.objcard dt { color: var(--soft); }
+.objcard dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.objcard .yes { color: var(--accent); }
+.objcard dd.wrap { white-space: normal; }
+#c-dial { flex: none; width: 84px; height: 84px; }
+#c-curve { display: block; width: 100%; height: 74px; margin-top: 8px; }
 
 .key h2 { margin: 0 0 2px; font: 600 16px var(--font-ui); }
 .key ul { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
@@ -204,14 +190,6 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
   <button type="button" class="zbtn" id="zfit" aria-label="Show the whole year">⤢</button>
 </div>
 <p class="hover" id="hover" hidden></p>
-<div class="tip" id="tip" hidden>
-  <b id="tip-h"></b>
-  <p class="sub2" id="tip-facts"></p>
-  <div class="tip-row"><dl id="tip-dl"></dl><canvas id="tip-dial"></canvas></div>
-  <canvas id="tip-curve"></canvas>
-  <canvas id="tip-year"></canvas>
-</div>
-
 <section class="panel dialog key" id="key" hidden>
   <div class="panel-top"><h2>Messier Calendar · <span id="place-name">Dublin</span></h2><span></span><button type="button" class="x" id="key-close" aria-label="Close">×</button></div>
   <p>Each night is one row, earliest at the top: this calendar year, or the six months either side of tonight. Each line marks when a Messier object is highest in the sky.</p>
@@ -231,7 +209,7 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
     <li><i class="full"></i>The night of the full Moon</li>
     <li><i class="dst"></i>Summer time: the times up the hour lines turn lilac and show the clock, an hour ahead of the ruler</li>
   </ul>
-  <p>The chart is drawn in the place's standard time, so the lines stay smooth through the year; the bar beside the dates marks summer time, when clocks run ahead of it. Times written out (the night tag, the object card, the readout under the pointer) are clock times, summer time included. Objects that never rise there are left off. Tap a date on the left to pick a night (tonight is picked when the page opens). Point at a line to see which object it is; tap it for its details on that night. Pinch or scroll to zoom, drag to move. Objects, in the bar, picks which ones are drawn.</p>
+  <p>The chart is drawn in the place's standard time, so the lines stay smooth through the year; the bar beside the dates marks summer time, when clocks run ahead of it. Times written out (the night tag, the object card, the readout under the pointer) are clock times, summer time included. Objects that never rise there are left off. Tap a date on the left to pick a night (tonight is picked when the page opens). Point at a line to see which object it is; tap it to pick it. Its panel shows where it is at the moment under the pointer, or wherever you last tapped. Pinch or scroll to zoom, drag to move. Objects, in the bar, picks which ones are drawn.</p>
 </section>
 
 <section class="panel dialog place" id="place" hidden>
@@ -267,17 +245,12 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
   <div class="objs-list" id="objs-list"></div>
 </section>
 
-<section class="panel dialog" id="card" hidden aria-live="polite">
+<section class="panel dialog objcard" id="card" hidden>
   <div class="panel-top"><b id="c-id"></b><span id="c-name"></span><button type="button" class="x" id="c-close" aria-label="Close">×</button></div>
-  <p class="sub" id="c-type"></p>
-  <dl class="facts">
-    <div><dt>Highest</dt><dd id="c-max"></dd></div>
-    <div><dt>Highest at midnight</dt><dd id="c-best"></dd></div>
-    <div><dt>Transits in darkness</dt><dd id="c-dark"></dd></div>
-  </dl>
-  <p class="night" id="c-night"></p>
-  <p class="coords" id="c-coords"></p>
-  <div class="vis"><canvas id="c-vis" aria-label="Hours observable each night through the year"></canvas><p id="c-vis-cap"></p></div>
+  <p class="obj-facts" id="c-facts"></p>
+  <p class="obj-facts" id="c-best"></p>
+  <div class="obj-row"><dl id="c-dl"></dl><canvas id="c-dial" aria-label="Where it is in the sky"></canvas></div>
+  <canvas id="c-curve" aria-label="Its altitude through that night"></canvas>
 </section>
 
 <script type="application/json" id="catalog">[["M1",5.575,22.017,"SNR","Crab Nebula"],["M2",21.5583,-0.817,"GC",""],["M3",13.7033,28.383,"GC",""],["M4",16.3933,-26.533,"GC",""],["M5",15.31,2.083,"GC",""],["M6",17.6683,-32.217,"OC","Butterfly Cluster"],["M7",17.8983,-34.817,"OC","Ptolemy Cluster"],["M8",18.0633,-24.383,"Neb","Lagoon Nebula"],["M9",17.32,-18.517,"GC",""],["M10",16.9517,-4.1,"GC",""],["M11",18.8517,-6.267,"OC","Wild Duck Cluster"],["M12",16.7867,-1.95,"GC",""],["M13",16.695,36.467,"GC","Hercules Cluster"],["M14",17.6267,-3.25,"GC",""],["M15",21.5,12.167,"GC",""],["M16",18.3133,-13.783,"Neb","Eagle Nebula"],["M17",18.3467,-16.183,"Neb","Omega Nebula"],["M18",18.3317,-17.133,"OC",""],["M19",17.0433,-26.267,"GC",""],["M20",18.0433,-23.033,"Neb","Trifid Nebula"],["M21",18.0767,-22.5,"OC",""],["M22",18.6067,-23.9,"GC",""],["M23",17.9467,-19.017,"OC",""],["M24",18.2817,-18.483,"Star cloud","Sagittarius Star Cloud"],["M25",18.5267,-19.25,"OC",""],["M26",18.7533,-9.4,"OC",""],["M27",19.9933,22.717,"PN","Dumbbell Nebula"],["M28",18.4083,-24.867,"GC",""],["M29",20.3983,38.517,"OC",""],["M30",21.6733,-23.183,"GC",""],["M31",0.7117,41.267,"Gal","Andromeda Galaxy"],["M32",0.7117,40.867,"Gal",""],["M33",1.565,30.65,"Gal","Triangulum Galaxy"],["M34",2.7,42.783,"OC",""],["M35",6.1483,24.333,"OC",""],["M36",5.6017,34.133,"OC",""],["M37",5.8733,32.55,"OC",""],["M38",5.4733,35.833,"OC",""],["M39",21.5367,48.433,"OC",""],["M40",12.3733,58.083,"Double star","Winnecke 4"],["M41",6.7667,-20.733,"OC",""],["M42",5.59,-5.45,"Neb","Orion Nebula"],["M43",5.5933,-5.267,"Neb","De Mairan's Nebula"],["M44",8.6683,19.983,"OC","Beehive Cluster"],["M45",3.7833,24.117,"OC","Pleiades"],["M46",7.6967,-14.817,"OC",""],["M47",7.61,-14.5,"OC",""],["M48",8.23,-5.8,"OC",""],["M49",12.4967,8.0,"Gal",""],["M50",7.0533,-8.333,"OC",""],["M51",13.4983,47.2,"Gal","Whirlpool Galaxy"],["M52",23.4033,61.583,"OC",""],["M53",13.215,18.167,"GC",""],["M54",18.9183,-30.483,"GC",""],["M55",19.6667,-30.967,"GC",""],["M56",19.2767,30.183,"GC",""],["M57",18.8933,33.033,"PN","Ring Nebula"],["M58",12.6283,11.817,"Gal",""],["M59",12.7,11.65,"Gal",""],["M60",12.7283,11.55,"Gal",""],["M61",12.365,4.467,"Gal",""],["M62",17.02,-30.117,"GC",""],["M63",13.2633,42.033,"Gal","Sunflower Galaxy"],["M64",12.945,21.683,"Gal","Black Eye Galaxy"],["M65",11.315,13.083,"Gal",""],["M66",11.3367,12.983,"Gal",""],["M67",8.855,11.817,"OC",""],["M68",12.6583,-26.75,"GC",""],["M69",18.5233,-32.35,"GC",""],["M70",18.72,-32.3,"GC",""],["M71",19.8967,18.783,"GC",""],["M72",20.8917,-12.533,"GC",""],["M73",20.9833,-12.633,"Asterism",""],["M74",1.6117,15.783,"Gal",""],["M75",20.1017,-21.917,"GC",""],["M76",1.7067,51.567,"PN","Little Dumbbell Nebula"],["M77",2.7117,-0.017,"Gal",""],["M78",5.7783,0.05,"Neb",""],["M79",5.4083,-24.55,"GC",""],["M80",16.2833,-22.983,"GC",""],["M81",9.9267,69.067,"Gal","Bode's Galaxy"],["M82",9.93,69.683,"Gal","Cigar Galaxy"],["M83",13.6167,-29.867,"Gal","Southern Pinwheel Galaxy"],["M84",12.4183,12.883,"Gal",""],["M85",12.4233,18.183,"Gal",""],["M86",12.4367,12.95,"Gal",""],["M87",12.5133,12.383,"Gal","Virgo A"],["M88",12.5333,14.417,"Gal",""],["M89",12.595,12.55,"Gal",""],["M90",12.6133,13.167,"Gal",""],["M91",12.59,14.5,"Gal",""],["M92",17.285,43.133,"GC",""],["M93",7.7433,-23.867,"OC",""],["M94",12.8483,41.117,"Gal",""],["M95",10.7333,11.7,"Gal",""],["M96",10.78,11.817,"Gal",""],["M97",11.2467,55.017,"PN","Owl Nebula"],["M98",12.23,14.9,"Gal",""],["M99",12.3133,14.417,"Gal",""],["M100",12.3817,15.817,"Gal",""],["M101",14.0533,54.35,"Gal","Pinwheel Galaxy"],["M102",15.1083,55.767,"Gal","Spindle Galaxy"],["M103",1.5533,60.7,"OC",""],["M104",12.6667,-11.617,"Gal","Sombrero Galaxy"],["M105",10.7967,12.583,"Gal",""],["M106",12.3167,47.3,"Gal",""],["M107",16.5417,-13.05,"GC",""],["M108",11.1917,55.667,"Gal",""],["M109",11.96,53.383,"Gal",""],["M110",0.6733,41.683,"Gal",""]]</script>
@@ -898,7 +871,7 @@ function visibility(o) {
   if (visCache && visCache.id === o.id && visCache.moon === moonOn) return visCache;
   const cols = (T1 - T0) * MSTEP + 1, c = document.createElement('canvas');
   c.width = cols; c.height = N * 3;
-  const g = c.getContext('2d'), img = g.createImageData(cols, c.height), dark = new Float32Array(N + 1), lit = new Float32Array(N + 1);
+  const g = c.getContext('2d'), img = g.createImageData(cols, c.height);
   const MUTE = [1, 1, 0.85, 0.65, 0.35]; // by sky: night, astronomical, nautical, civil twilight, day
   for (let d = 1; d <= N; d++) for (let i = 0; i < cols; i++) {
     const t = T0 + i / MSTEP, alt = altAt(o, d, t);
@@ -909,7 +882,6 @@ function visibility(o) {
       a = (0.06 + 0.22 * alt / 90) * MUTE[sky];
       if (alt >= VIS_ALT && sky === 0) {
         const moonlit = moonOn && moonLight(moonAt(jdAt(d, t))) > MOONLIT;
-        if (i < cols - 1) (moonlit ? lit : dark)[d] += 1 / MSTEP;
         rgb = moonlit ? LIT_RGB : VIS_RGB;
         a = moonlit ? 0.36 : 0.42 + 0.2 * alt / 90;
       }
@@ -921,41 +893,7 @@ function visibility(o) {
     }
   }
   g.putImageData(img, 0, 0);
-  return visCache = { id: o.id, moon: moonOn, img: c, dark, lit };
-}
-// hours observable each night as a small bar chart: dark hours in cyan, moonlit ones stacked in grey
-function drawVisGraph(o) {
-  const v = visibility(o), cv2 = $('c-vis'), w = cv2.clientWidth, h = 78, base = h - 13, g = cv2.getContext('2d');
-  cv2.width = Math.round(w * dpr); cv2.height = Math.round(h * dpr);
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  let top = 0, best = 0;
-  for (let d = 1; d <= N; d++) { top = Math.max(top, v.dark[d] + v.lit[d]); if (v.dark[d] > v.dark[best] || !best) best = d; }
-  const scale = Math.max(4, Math.ceil(top / 2) * 2), bw = w / N, yh = hrs => base - (hrs / scale) * (base - 4);
-  g.font = FONT_S;
-  g.textBaseline = 'middle';
-  g.strokeStyle = 'rgba(147, 160, 181, 0.18)';
-  g.lineWidth = 1;
-  for (let hh = 2; hh <= scale; hh += 2) { g.beginPath(); g.moveTo(0, Math.round(yh(hh)) + 0.5); g.lineTo(w, Math.round(yh(hh)) + 0.5); g.stroke(); }
-  for (let d = 1; d <= N; d++) {
-    const x = (d - 1) * bw;
-    if (v.dark[d]) { g.fillStyle = 'rgba(95, 208, 220, 0.85)'; g.fillRect(x, yh(v.dark[d]), bw + 0.4, base - yh(v.dark[d])); }
-    if (v.lit[d]) { g.fillStyle = 'rgba(205, 212, 222, 0.55)'; g.fillRect(x, yh(v.dark[d] + v.lit[d]), bw + 0.4, yh(v.dark[d]) - yh(v.dark[d] + v.lit[d])); }
-  }
-  g.fillStyle = SOFT;
-  g.textAlign = 'left';
-  g.fillText(`${scale} h`, 2, 6);
-  g.textAlign = 'center';
-  for (const { d0, m } of MONTHS) {
-    const x = (d0 - 1) * bw;
-    g.fillStyle = 'rgba(147, 160, 181, 0.35)'; g.fillRect(Math.round(x), base, 1, 4);
-    if (w / 12 > 18) { g.fillStyle = SOFT; g.fillText(MON[m][0], x + 15 * bw, h - 5); }
-  }
-  g.fillStyle = TEXT;
-  g.fillRect(Math.round((selDay - 0.5) * bw), 0, 1.5, base);
-  const tonightHrs = v.dark[selDay] + v.lit[selDay], f = x => `${x.toFixed(1)} h`;
-  $('c-vis-cap').textContent = !top
-    ? `It never gets ${VIS_ALT}° up in full darkness here.`
-    : `Hours at least ${VIS_ALT}° up in full darkness, each night: ${f(tonightHrs)} on ${dayLabel(selDay)}${moonOn && v.lit[selDay] ? ` (${f(v.lit[selDay])} moonlit)` : ''}; at best ${f(v.dark[best])}${moonOn ? ' moonless' : ''}, around ${dayLabel(best)}.${moonOn ? ' Grey: moonlit.' : ''}`;
+  return visCache = { id: o.id, moon: moonOn, img: c };
 }
 function nightText(d, maxW) {
   const pre = d === todayRow ? 'tonight · ' : '', sun = CROSS[0][d], astro = CROSS[3][d];
@@ -1065,12 +1003,14 @@ function drawLine(o, lw) {
     ctx.fillStyle = ctx.strokeStyle;
     ctx.beginPath(); ctx.arc(X(bt), Y(o.bestDay + 0.5), isSel ? 4.5 : 1.8 * lw, 0, Math.PI * 2); ctx.fill();
   }
-  if (isSel && selDay != null) {
-    const st = transitAt(o, selDay);
-    if (st != null) {
-      ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(X(st), Y(selDay + 0.5), 7, 0, Math.PI * 2); ctx.stroke();
-    }
+  // the moment its panel describes, unless the mouse is on the chart (the pointer is the marker then)
+  if (isSel && moment && !hoverPt) {
+    const mx = X(moment.t), my = Y(moment.d + 0.5);
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI * 2);
+    ctx.moveTo(mx - 11, my); ctx.lineTo(mx - 7, my); ctx.moveTo(mx + 7, my); ctx.lineTo(mx + 11, my);
+    ctx.moveTo(mx, my - 11); ctx.lineTo(mx, my - 7); ctx.moveTo(mx, my + 7); ctx.lineTo(mx, my + 11);
+    ctx.stroke();
   }
 }
 // a label on the line, as near the night d0 as there's room for
@@ -1161,7 +1101,7 @@ function drawRulers() {
 function pick(px, py, radius) {
   for (let i = placed.length - 1; i >= 0; i--) {
     const b = placed[i];
-    if (b.o && px >= b.x - 2 && px <= b.x + b.w + 2 && py >= b.y - 2 && py <= b.y + b.h + 2) return { o: b.o, d: b.d };
+    if (b.o && px >= b.x - 2 && px <= b.x + b.w + 2 && py >= b.y - 2 && py <= b.y + b.h + 2) return { o: b.o, d: b.d, t: transitAt(b.o, b.d) ?? 24 };
   }
   let best = null, bd = radius;
   for (const o of OBJS) for (const r of o.runs) {
@@ -1173,45 +1113,58 @@ function pick(px, py, radius) {
     if (dd >= bd) continue;
     const d = clamp(Math.round(r.d0 + u * (r.d1 - r.d0)), 1, N), t = r.t0 + u * (r.t1 - r.t0);
     if (sunAlt(d, t) >= -0.833) continue; // lines vanish into daylight, so they can't be picked there
-    bd = dd; best = { o, d };
+    bd = dd; best = { o, d, t };
   }
   return best;
 }
 const $ = id => document.getElementById(id);
-function fmtRA(ra) { const h = Math.floor(ra), m = (ra - h) * 60; return `${String(h).padStart(2, '0')}h ${m.toFixed(1).padStart(4, '0')}m`; }
-function fmtDec(dec) { const s = dec < 0 ? '−' : '+', a = Math.abs(dec), d = Math.floor(a), m = Math.round((a - d) * 60); return `${s}${d}° ${String(m).padStart(2, '0')}′`; }
+// the night and time the picked object's panel describes: under the mouse, or where it was last tapped
+let moment = null;
+function setMoment(d, t) {
+  moment = { d: clamp(Math.floor(d), 1, N), t: clamp(t, T0, T1) };
+  if (sel) fillCard();
+}
+// hit: { o, d, t } — the object and the moment to show it at
 function select(hit) {
   sel = hit ? hit.o : null;
   $('card').hidden = !sel;
   if (sel) {
     showPanel(null);
-    fillCard();
+    setMoment(hit.d, hit.t);
     DIALOGS.card.open();
   }
   showHover();
   redraw();
 }
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+// what it is, its year in one line, then where it is at the moment: the rows, the sky dial and that night's curve
 function fillCard() {
-  {
-    const o = sel;
-    $('c-id').textContent = o.id;
-    $('c-name').textContent = o.name;
-    $('c-type').textContent = `${TYPE[o.type] || o.type} in ${o.con} · magnitude ≈${o.mag.toFixed(1)}`;
-    $('c-max').textContent = `${Math.round(o.maxAlt)}°${o.maxAlt < 20 ? ' (low)' : ''}`;
-    $('c-best').textContent = `~${dayLabel(o.bestDay)}`;
-    $('c-dark').textContent = o.dark.length ? o.dark.map(([a, b]) => `${dayLabel(a)}–${dayLabel(b)}`).join(', ') : 'never';
-    const t = transitHour(o.ra, selDay), band = skyIndex(sunAlt(selDay, t));
-    const tc = t + dstOf(selDay), when = tc >= 24 ? `${hm(tc)} on the morning of ${dayLabel(selDay + 1)}` : hm(tc);
-    let night = `On the night of ${dayLabel(selDay)} it's highest at ${when}, in ${SKY_PHRASE[band]}.`;
-    if (moonOn) {
-      const m = moonAt(jdAt(selDay, t)), pct = Math.round(100 * m.frac), ra = o.ra * 15 * D2R, dc = o.dec * D2R;
-      const sep = Math.acos(clamp(m.x * Math.cos(dc) * Math.cos(ra) + m.y * Math.cos(dc) * Math.sin(ra) + m.z * Math.sin(dc), -1, 1)) * R2D;
-      night += m.alt > -0.833 ? ` The Moon is up then, ${pct}% lit and ${Math.round(sep)}° away.` : ` The Moon is down then (${pct}% lit).`;
-    }
-    $('c-night').textContent = night;
-    $('c-coords').textContent = `RA ${fmtRA(o.ra)} · Dec ${fmtDec(o.dec)} (J2000)`;
-    drawVisGraph(o);
+  const o = sel, { d, t } = moment, alt = altAt(o, d, t), az = azAt(o, d, t), sky = skyIndex(sunAlt(d, t)), tc = t + dstOf(d);
+  const m = moonOn ? moonAt(jdAt(d, t)) : null, moonlit = m && moonLight(m) > MOONLIT, ok = alt >= VIS_ALT && sky === 0 && !moonlit;
+  $('c-id').textContent = o.id;
+  $('c-name').textContent = objName(o);
+  $('c-facts').textContent = objFacts(o);
+  $('c-best').textContent = `highest ${Math.round(o.maxAlt)}° · at midnight ~${dayLabel(o.bestDay)} · dark transits ${o.dark.length ? o.dark.map(([a, b]) => `${dayLabel(a)}–${dayLabel(b)}`).join(', ') : 'never'}`;
+  const rows = [
+    ['When', tc >= 24 ? `${dayLabel(d + 1)} ${hm(tc)} · night of ${ordinal(rowDate(d).getUTCDate())}` : `${dayLabel(d)} ${hm(tc)}`],
+    ['Alt', `${Math.round(alt)}°${alt < 0 ? ' (below the horizon)' : ''}`],
+    ['Az', `${Math.round(az)}° ${COMPASS[Math.round(az / 22.5) % 16]}`],
+    ['Sky', SKY_PHRASE[sky]],
+  ];
+  if (m) rows.push(['Moon', m.alt > -0.833 ? `${Math.max(0, Math.round(m.alt))}° up, ${Math.round(100 * m.frac)}% lit` : 'down']);
+  rows.push(['View', ok ? 'yes' : alt < VIS_ALT ? `no, under ${VIS_ALT}°` : sky ? 'no, not fully dark' : 'no, moonlit']);
+  const dl = $('c-dl');
+  dl.replaceChildren();
+  for (const [k, v] of rows) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = k;
+    dd.textContent = v;
+    if (k === 'View' && ok) dd.className = 'yes';
+    if (k === 'When') dd.className = 'wrap'; // the small hours add the night's date; let that wrap, not vanish
+    dl.append(dt, dd);
   }
+  drawDial(alt, az, m, jdAt(d, t));
+  drawNightCurve(o, d, t);
 }
 
 // ---------- gestures: drag to move, pinch or scroll to zoom, tap to pick ----------
@@ -1275,7 +1228,13 @@ function endPointer(e) {
       lastTap = { t: now, x: e.clientX, y: e.clientY };
       const x = e.clientX, y = e.clientY;
       if (y > plot.y && y < plot.y + plot.h) {
-        if (x > plot.x) select(pick(x, y, coarse ? 16 : 8));
+        if (x > plot.x) {
+          // with an object picked, a touch tap always moves its moment: the lines are too close to aim between, so
+          // switching means closing it first. A mouse sees the line it's on lit and labelled, so its click can switch.
+          const hit = sel && e.pointerType !== 'mouse' ? null : pick(x, y, coarse ? 16 : 8), d = Math.floor(dOfY(y)), t = tOfX(x);
+          if (hit && hit.o !== sel) select({ o: hit.o, d, t });
+          else if (sel) { setMoment(d, t); redraw(); }
+        }
         else if (pillBox?.pinned && y >= pillBox.y - 4 && y <= pillBox.y + pillBox.h + 4) centreOn(selDay);
         else pickNight(Math.floor(dOfY(y)));
       }
@@ -1287,7 +1246,7 @@ function endPointer(e) {
 }
 cv.addEventListener('pointerup', endPointer);
 cv.addEventListener('pointercancel', endPointer);
-cv.addEventListener('pointerleave', () => { hoverPt = null; $('hover').hidden = $('tip').hidden = true; hoverLine(-1, -1); });
+cv.addEventListener('pointerleave', () => { hoverPt = null; $('hover').hidden = true; hoverLine(-1, -1); if (sel) redraw(); });
 // which line the mouse is on: it is brightened and labelled by the pointer
 function hoverLine(x, y) {
   const hit = x > plot.x && y > plot.y && y < plot.y + plot.h ? pick(x, y, 8) : null, o = hit ? hit.o : null;
@@ -1299,7 +1258,7 @@ function hoverLine(x, y) {
 }
 function pickNight(d) {
   selDay = clamp(d, 1, N);
-  if (sel) fillCard();
+  if (sel) setMoment(selDay, moment.t);
   if ((objSort === 'night' || objSort === 'rising') && !$('objs').hidden) renderObjs();
   redraw();
 }
@@ -1336,39 +1295,6 @@ function azimuth(raH, decDeg, jd) {
 }
 const azAt = (o, d, t) => azimuth(o.ra, o.dec, jdAt(d, t));
 // the picked object at the point under the mouse: when, where in the sky, how dark, and whether it counts as viewable
-function showTip(d, t) {
-  const tip = $('tip'), o = sel, alt = altAt(o, d, t), az = azAt(o, d, t), sky = skyIndex(sunAlt(d, t)), tc = t + dstOf(d);
-  const m = moonOn ? moonAt(jdAt(d, t)) : null, moonlit = m && moonLight(m) > MOONLIT;
-  const ok = alt >= VIS_ALT && sky === 0 && !moonlit;
-  const rows = [
-    ['When', `${dayLabel(tc >= 24 ? d + 1 : d)} ${hm(tc)}`],
-    ...(tc >= 24 ? [['Night', `of ${dayLabel(d)}`]] : []),
-    ['Alt', `${Math.round(alt)}°${alt < 0 ? ' (below the horizon)' : ''}`],
-    ['Az', `${Math.round(az)}° ${COMPASS[Math.round(az / 22.5) % 16]}`],
-    ['Sky', SKY_PHRASE[sky]],
-  ];
-  if (m) rows.push(['Moon', m.alt > -0.833 ? `${Math.max(0, Math.round(m.alt))}° up, ${Math.round(100 * m.frac)}% lit` : 'down']);
-  rows.push(['View', ok ? 'yes' : alt < VIS_ALT ? `no, under ${VIS_ALT}°` : sky ? 'no, not fully dark' : 'no, moonlit']);
-  $('tip-h').textContent = o.name ? `${o.id} ${o.name}` : `${o.id} ${objName(o)}`;
-  $('tip-facts').innerText = objFacts(o);
-  const dl = $('tip-dl');
-  dl.replaceChildren();
-  for (const [k, v] of rows) {
-    const dt = document.createElement('dt'), dd = document.createElement('dd');
-    dt.textContent = k;
-    dd.textContent = v;
-    if (k === 'View' && ok) dd.className = 'yes';
-    dl.append(dt, dd);
-  }
-  tip.hidden = false;
-  drawDial(alt, az, m, jdAt(d, t));
-  drawNightCurve(o, d, t);
-  drawYearCurve(o, d, t);
-  // beside the pointer, flipped to stay on screen
-  const w = tip.offsetWidth, h = tip.offsetHeight, x = hoverPt.x + 16 + w > window.innerWidth ? hoverPt.x - 16 - w : hoverPt.x + 16;
-  const y = hoverPt.y + 16 + h > window.innerHeight - (parseFloat(document.documentElement.style.getPropertyValue('--bar-h')) || 52) ? hoverPt.y - 16 - h : hoverPt.y + 16;
-  tip.style.transform = `translate(${Math.round(Math.max(4, x))}px, ${Math.round(Math.max(4, y))}px)`;
-}
 // size a canvas to its CSS box at the screen's pixel density and hand back a context in CSS pixels
 function fitCanvas(c) {
   const w = c.clientWidth, h = c.clientHeight, g = c.getContext('2d');
@@ -1379,7 +1305,7 @@ function fitCanvas(c) {
 }
 // the sky seen from overhead, as on a map: north up, east right, the horizon at the rim and the zenith in the middle
 function drawDial(alt, az, moon, jd) {
-  const [g, w, h] = fitCanvas($('tip-dial')), cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 11;
+  const [g, w, h] = fitCanvas($('c-dial')), cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 11;
   const at = (a, z) => { const r = R * (90 - Math.max(a, 0)) / 90; return [cx + r * Math.sin(z * D2R), cy - r * Math.cos(z * D2R)]; };
   g.fillStyle = '#0b1426';
   g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
@@ -1402,7 +1328,7 @@ function drawDial(alt, az, moon, jd) {
 // the night under the pointer, sunset to sunrise: the sky's darkness behind, the 30° line, the object's altitude
 // (and the Moon's, with the Moon on), and the pointer's moment
 function drawNightCurve(o, d, t) {
-  const [g, w, h] = fitCanvas($('tip-curve')), sun = CROSS[0][d] || [T0, T1], a = sun[0], b = sun[1], base = h - 12;
+  const [g, w, h] = fitCanvas($('c-curve')), sun = CROSS[0][d] || [T0, T1], a = sun[0], b = sun[1], base = h - 12;
   const x = tt => (tt - a) / (b - a) * w, y = alt => base - (clamp(alt, -10, 90) + 10) / 100 * (base - 2);
   for (let i = 0; i < w; i += 2) g.fillStyle = SKY[skyIndex(sunAlt(d, a + (i + 1) / w * (b - a)))], g.fillRect(i, 0, 2, base);
   g.strokeStyle = 'rgba(147, 160, 181, 0.5)'; g.lineWidth = 1;
@@ -1427,34 +1353,6 @@ function drawNightCurve(o, d, t) {
   g.textAlign = 'right'; g.fillText(`sunrise ${clock(d, b)}`, w, h);
   g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(95, 208, 220, 0.85)'; g.fillText(`${VIS_ALT}°`, 2, y(VIS_ALT) - 6);
 }
-// the column under the pointer, through the year: the sky at that time each night behind (gold where moonlit, with the
-// Moon on), the 30° line, the object's altitude at that time, and the hovered night
-function drawYearCurve(o, d, t) {
-  const [g, w, h] = fitCanvas($('tip-year')), base = h - 12, bw = w / N;
-  const y = alt => base - (clamp(alt, -10, 90) + 10) / 100 * (base - 2);
-  for (let r = 1; r <= N; r++) {
-    g.fillStyle = SKY[skyIndex(sunAlt(r, t))];
-    g.fillRect((r - 1) * bw, 0, bw + 0.5, base);
-    if (moonOn && moonLight(moonAt(jdAt(r, t))) > MOONLIT) { g.fillStyle = 'rgba(228, 234, 244, 0.3)'; g.fillRect((r - 1) * bw, 0, bw + 0.5, base); }
-  }
-  g.strokeStyle = 'rgba(147, 160, 181, 0.5)'; g.lineWidth = 1;
-  g.beginPath(); g.moveTo(0, Math.round(y(0)) + 0.5); g.lineTo(w, Math.round(y(0)) + 0.5); g.stroke();
-  g.setLineDash([3, 2]); g.strokeStyle = 'rgba(95, 208, 220, 0.6)';
-  g.beginPath(); g.moveTo(0, Math.round(y(VIS_ALT)) + 0.5); g.lineTo(w, Math.round(y(VIS_ALT)) + 0.5); g.stroke();
-  g.setLineDash([]);
-  g.strokeStyle = ACCENT; g.lineWidth = 1.8; g.beginPath();
-  for (let r = 1; r <= N; r++) { const px = (r - 0.5) * bw, py = y(altAt(o, r, t)); r > 1 ? g.lineTo(px, py) : g.moveTo(px, py); }
-  g.stroke();
-  g.fillStyle = TEXT;
-  g.fillRect(Math.round((d - 0.5) * bw), 0, 1, base);
-  g.beginPath(); g.arc((d - 0.5) * bw, y(altAt(o, d, t)), 3, 0, Math.PI * 2); g.fill();
-  g.font = '400 9px "IBM Plex Mono", ui-monospace, Menlo, monospace';
-  g.textBaseline = 'bottom'; g.textAlign = 'center'; g.fillStyle = SOFT;
-  for (const { d0, d1, m } of MONTHS) if ((d1 - d0) * bw > 10) g.fillText(MON[m][0], ((d0 + d1) / 2 - 1) * bw, h);
-  // the chart's columns are standard time, so name it when the place has summer time
-  g.textAlign = 'right'; g.textBaseline = 'top'; g.fillStyle = 'rgba(227, 233, 242, 0.75)';
-  g.fillText(`each night at ${hm(t)}${DST_SPANS.length ? ` ${stdLabel()}` : ''}`, w - 2, 2);
-}
 // "1.3°", "0.12°", "0.013°": enough figures to read the size, whatever its scale
 const fmtDeg = arcmin => { const d = arcmin / 60; return `${d.toFixed(d >= 1 ? 1 : d >= 0.1 ? 2 : 3)}°`; };
 // light-years to two or three significant figures, in millions past a million
@@ -1466,16 +1364,15 @@ function fmtLy(ly) {
 // type, brightness and size on the sky; then how far, and how big that makes it (along its long axis)
 function objFacts(o) {
   const [a, b] = o.size, across = o.dist * a / 60 * D2R;
-  return `${TYPE[o.type] || o.type} · mag ≈${o.mag.toFixed(1)} · ${b ? `${fmtDeg(a)} × ${fmtDeg(b)}` : fmtDeg(a)}\n` +
+  return `${TYPE[o.type] || o.type} · mag ≈${o.mag.toFixed(1)} · ${b ? `${fmtDeg(a)} × ${fmtDeg(b)}` : fmtDeg(a)} · ` +
     `≈${fmtLy(o.dist)} away · ≈${fmtLy(across)} across`;
 }
 function showHover() {
-  const hv = $('hover'), tip = $('tip');
-  if (!hoverPt || hoverPt.x < plot.x || hoverPt.y < plot.y) { hv.hidden = tip.hidden = true; return; }
+  const hv = $('hover');
+  if (!hoverPt || hoverPt.x < plot.x || hoverPt.y < plot.y) { hv.hidden = true; return; }
   const t = tOfX(hoverPt.x), d = Math.floor(dOfY(hoverPt.y));
-  if (t < T0 || t > T1 || d < 1 || d > N) { hv.hidden = tip.hidden = true; return; }
-  if (sel) { hv.hidden = true; showTip(d, t); return; }
-  tip.hidden = true;
+  if (t < T0 || t > T1 || d < 1 || d > N) { hv.hidden = true; return; }
+  if (sel) { hv.hidden = true; setMoment(d, t); return; }
   hv.hidden = false;
   let text = `${dayLabel(d)} · ${clock(d, t)} · ${SKY_PHRASE[skyIndex(sunAlt(d, t))]}`;
   if (moonOn) { const m = moonAt(jdAt(d, t)); text += m.alt > -0.833 ? ` · moon ${Math.max(0, Math.round(m.alt))}° up, ${Math.round(100 * m.frac)}% lit` : ' · moon down'; }
@@ -1705,7 +1602,7 @@ $('objs-close').addEventListener('click', () => showPanel(null));
 // each dialog opens centred over the chart, or where it was last dragged (remembered); a double-click on the
 // title bar puts it back in the middle. It is kept on screen, and its height capped to the room below its top.
 const DIALOGS = {};
-function makeDialog(id) {
+function makeDialog(id, { dock = false } = {}) {
   const box = $(id), bar = box.querySelector('.panel-top'), store = `messier-calendar-pos-${id}`;
   const room = () => window.innerHeight - (parseFloat(document.documentElement.style.getPropertyValue('--bar-h')) || 52);
   const place = (x, y) => {
@@ -1715,10 +1612,11 @@ function makeDialog(id) {
     box.style.top = `${top}px`;
     box.style.maxHeight = `${H - top - 12}px`;
   };
+  // centred; or, for a docking dialog on a narrow screen, along the bottom above the bar
   const centre = () => {
     box.style.maxHeight = '';
     const r = box.getBoundingClientRect();
-    place((window.innerWidth - r.width) / 2, (room() - r.height) / 2);
+    place((window.innerWidth - r.width) / 2, dock && window.innerWidth < 600 ? room() - r.height - 8 : (room() - r.height) / 2);
   };
   let saved = null;
   try { const p = JSON.parse(localStorage.getItem(store)); if (Array.isArray(p)) saved = p; } catch {}
@@ -1748,7 +1646,8 @@ function makeDialog(id) {
   });
   window.addEventListener('resize', () => { if (!box.hidden) saved ? place(...saved) : centre(); });
 }
-['key', 'place', 'objs', 'card'].forEach(makeDialog);
+for (const id of ['key', 'place', 'objs']) makeDialog(id);
+makeDialog('card', { dock: true });
 const refreshObjs = () => { if (!$('objs').hidden) renderObjs(); else syncObjs(); };
 refreshObjs();
 // switching range keeps the picked date when it's still on the chart
@@ -1762,7 +1661,7 @@ for (const b of rangeBtns) b.addEventListener('click', () => {
   const d = Math.round((picked - START) / DAY) + 1;
   selDay = d >= 1 && d <= N ? d : todayRow;
   syncRange();
-  if (sel) fillCard();
+  if (sel) setMoment(selDay, moment.t);
   refreshObjs();
   ky0 = plot.h / N;
   centreOn(selDay);
