@@ -1780,7 +1780,7 @@ function morphDots(m) {
   m.dk = dk;
   m.dots = OBJS.filter(isShown).map(o => {
     const tr = o.transit[m.d], onRow = tr >= T0 && tr <= T1, [alt, az] = skyAltAz(o, jd), [ex, ey, front] = skyProject(alt, az, m.v), isSel = o === m.o;
-    return { o, tr: clamp(tr, T0, T1), a0: onRow ? (isSel ? 1 : 0.2 + 0.8 * o.maxAlt / 90) : 0, ex, ey, front, a1: alt > 0 && front ? (isSel ? 1 : 0.3 + 0.6 * dk) : 0, isSel };
+    return { o, tr: clamp(tr, T0, T1), a0: onRow ? (isSel ? 1 : 0.2 + 0.8 * o.maxAlt / 90) : 0, ex, ey, front, up: alt > 0, a1: !front ? 0 : alt > 0 ? (isSel ? 1 : 0.3 + 0.6 * dk) : (isSel ? 0.7 : 0.2 + 0.15 * dk), isSel };
   });
 }
 function drawMorph() {
@@ -1791,7 +1791,7 @@ function drawMorph() {
   ctx.globalAlpha = clamp(e * 1.5, 0, 1);
   for (let y = 0; y < H; y += 3) {
     const yn = 1 - 2 * (y + 1.5 - shift) / H, dy = (yn * tf * Math.cos(pr) + Math.sin(pr)) / Math.hypot(1, yn * tf);
-    const sm = clamp(-dy / 0.16, 0, 1), c = dy < 0 ? mix(hor.map(x => x * 0.45), gnd, sm * sm * (3 - 2 * sm)) : mix(hor, zen, Math.sqrt(dy));
+    const sm = clamp(-dy / 0.16, 0, 1), c = dy < 0 ? mix(hor.map(x => x * 0.45), gnd, sm * sm * (3 - 2 * sm)).map((x, i) => x + [36, 31, 25][i]) : mix(hor, zen, Math.sqrt(dy));
     ctx.fillStyle = `rgb(${c.map(Math.round).join(',')})`;
     ctx.fillRect(0, y, W, 3);
   }
@@ -1818,7 +1818,7 @@ function drawMorph() {
     ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
     if (e < 1) { ctx.globalAlpha = a * (1 - e); ctx.fillStyle = `rgb(${col})`; ctx.fill(); }
-    const la = clamp((e - 0.6) / 0.4, 0, 1) * (q.a1 > 0 ? 1 : 0) * (0.45 + 0.55 * m.dk) * (q.isSel ? 1 : 0.66);
+    const la = clamp((e - 0.6) / 0.4, 0, 1) * (q.a1 > 0 ? 1 : 0) * (0.45 + 0.55 * m.dk) * (q.isSel ? 1 : 0.66) * (q.up ? 1 : 0.55);
     if (la > 0.01) { ctx.globalAlpha = la; ctx.fillStyle = q.isSel ? ACCENT : 'rgb(223, 230, 240)'; ctx.fillText(q.o.id, x + 11, y + 0.5); }
   }
   ctx.globalAlpha = 1;
