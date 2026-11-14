@@ -30,6 +30,13 @@ html, body {
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
+/* the sky view opens over everything; while a night morphs into it the chart's controls step back */
+#skyframe { position: fixed; inset: 0; z-index: 10; width: 100%; height: 100%; border: 0; opacity: 0; pointer-events: none; transition: opacity 0.35s; background: transparent; }
+#skyframe.on { opacity: 1; pointer-events: auto; }
+.toolbar, .zoom, .panel, .hover { transition: opacity 0.3s; }
+body.morphing .toolbar, body.morphing .zoom, body.morphing .panel, body.morphing .hover { opacity: 0; pointer-events: none; }
+body.morphing #chart { pointer-events: none; }
+.pill.mini { padding: 5px 10px; font-size: 11px; align-self: center; }
 /* a finder's reticle, its hotspot at the centre: white over the sky, cyan over a line; a closed hand only while dragging */
 #chart { position: fixed; inset: 0; display: block; touch-action: none; cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cg stroke='%23070d1a' stroke-opacity='0.85' stroke-width='3'%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Cpath d='M12 1v6M12 17v6M1 12h6M17 12h6'/%3E%3C/g%3E%3Cg stroke='%23ffffff' stroke-width='1.25'%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Cpath d='M12 1v6M12 17v6M1 12h6M17 12h6'/%3E%3C/g%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='1' fill='%23ffffff' stroke='%23070d1a' stroke-width='0.6'/%3E%3C/svg%3E") 12 12, crosshair; -webkit-user-select: none; user-select: none; }
 #chart.on-line { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cg stroke='%23070d1a' stroke-opacity='0.85' stroke-width='3'%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Cpath d='M12 1v6M12 17v6M1 12h6M17 12h6'/%3E%3C/g%3E%3Cg stroke='%235fd0dc' stroke-width='1.25'%3E%3Ccircle cx='12' cy='12' r='6.5'/%3E%3Cpath d='M12 1v6M12 17v6M1 12h6M17 12h6'/%3E%3C/g%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='1' fill='%235fd0dc' stroke='%23070d1a' stroke-width='0.6'/%3E%3C/svg%3E") 12 12, crosshair; }
@@ -179,6 +186,7 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
   <button type="button" class="pill" id="keybtn" aria-expanded="false" aria-controls="key">Key</button>
   <button type="button" class="pill" id="placebtn" aria-expanded="false" aria-controls="place">Dublin</button>
   <button type="button" class="pill" id="objsbtn" aria-expanded="false" aria-controls="objs">Objects<span class="n" id="objsbtn-n"></span></button>
+  <button type="button" class="pill" id="skybtn" title="See the picked night as the sky overhead">Sky</button>
   <button type="button" class="pill toggle" id="moonbtn" aria-pressed="false">Moon</button>
   <span class="sep" aria-hidden="true"></span>
   <button type="button" class="pill toggle" data-range="year" aria-pressed="false">Jan–Dec</button>
@@ -209,7 +217,7 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
     <li><i class="full"></i>The night of the full Moon</li>
     <li><i class="dst"></i>Summer time: the times up the hour lines turn lilac and show the clock, an hour ahead of the ruler</li>
   </ul>
-  <p>The chart is drawn in the place's standard time, so the lines stay smooth through the year; the bar beside the dates marks summer time, when clocks run ahead of it. Times written out (the night tag, the object card, the readout under the pointer) are clock times, summer time included. Objects that never rise there are left off. Tap a date on the left to pick a night (tonight is picked when the page opens). Point at a line to see which object it is; tap it to pick it. Its panel shows where it is at the moment under the pointer, or wherever you last tapped. Pinch or scroll to zoom, drag to move. Objects, in the bar, picks which ones are drawn.</p>
+  <p>The chart is drawn in the place's standard time, so the lines stay smooth through the year; the bar beside the dates marks summer time, when clocks run ahead of it. Times written out (the night tag, the object card, the readout under the pointer) are clock times, summer time included. Objects that never rise there are left off. Tap a date on the left to pick a night (tonight is picked when the page opens). Point at a line to see which object it is; tap it to pick it. Its panel shows where it is at the moment under the pointer, or wherever you last tapped. Pinch or scroll to zoom, drag to move. Objects, in the bar, picks which ones are drawn. Sky turns the picked night into the sky overhead: each object flies from its place on the night's row to where it stands in the sky (tapping the date tag or the night's label does the same).</p>
 </section>
 
 <section class="panel dialog place" id="place" hidden>
@@ -246,7 +254,7 @@ input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
 </section>
 
 <section class="panel dialog objcard" id="card" hidden>
-  <div class="panel-top"><b id="c-id"></b><span id="c-name"></span><button type="button" class="x" id="c-close" aria-label="Close">×</button></div>
+  <div class="panel-top"><b id="c-id"></b><span id="c-name"></span><button type="button" class="pill mini" id="c-sky" title="See this moment as the sky overhead">Sky</button><button type="button" class="x" id="c-close" aria-label="Close">×</button></div>
   <p class="obj-facts" id="c-facts"></p>
   <p class="obj-facts" id="c-best"></p>
   <div class="obj-row"><dl id="c-dl"></dl><canvas id="c-dial" aria-label="Where it is in the sky"></canvas></div>
@@ -568,6 +576,7 @@ const tOfX = x => T0 + (x - plot.x - view.ox) / kx();
 const dOfY = y => 1 + (y - plot.y - view.oy) / ky();
 let sel = null, selDay = 1, placed = [], hoverPt = null, queued = false, pillBox = null;
 let hov = null, hovDay = 0; // the line under the mouse, and the night it was touched at
+let tagBox = null; // the picked night's label on the chart
 
 function clampView() {
   const cw = (T1 - T0) * kx(), ch = N * ky();
@@ -822,6 +831,7 @@ function draw() {
   if (ny < plot.y + 2) ny = Y(selDay + 1) + 2;
   const nightBox = { x: Math.min(X(T1), plot.x + plot.w) - 6 - nw, y: ny, w: nw, h: 15, o: null };
   placed.push(nightBox);
+  tagBox = nightBox;
   ctx.font = FONT;
   // object labels only for the picked object and the line under the mouse (by the pointer)
   if (sel && isShown(sel)) placeLabel(sel, sel === hov ? hovDay : sel.bestDay);
@@ -862,6 +872,7 @@ function draw() {
   ctx.restore();
 
   drawRulers();
+  if (morph) drawMorph();
 }
 // ---------- the picked object's visibility through the year ----------
 // observable: at least 30° up in astronomical darkness; with the Moon on, cells under noticeable moonlight count apart
@@ -1231,11 +1242,13 @@ function endPointer(e) {
         if (x > plot.x) {
           // with an object picked, a touch tap always moves its moment: the lines are too close to aim between, so
           // switching means closing it first. A mouse sees the line it's on lit and labelled, so its click can switch.
+          if (tagBox && x >= tagBox.x && x <= tagBox.x + tagBox.w && y >= tagBox.y - 3 && y <= tagBox.y + tagBox.h + 3) { gesture = null; openSkyAt(selDay); return; }
           const hit = sel && e.pointerType !== 'mouse' ? null : pick(x, y, coarse ? 16 : 8), d = Math.floor(dOfY(y)), t = tOfX(x);
           if (hit && hit.o !== sel) select({ o: hit.o, d, t });
           else if (sel) { setMoment(d, t); redraw(); }
         }
         else if (pillBox?.pinned && y >= pillBox.y - 4 && y <= pillBox.y + pillBox.h + 4) centreOn(selDay);
+        else if (pillBox && y >= pillBox.y - 2 && y <= pillBox.y + pillBox.h + 2) openSkyAt(selDay);
         else pickNight(Math.floor(dOfY(y)));
       }
     }
@@ -1719,6 +1732,177 @@ $('place-here').addEventListener('click', () => {
     err => { msg.textContent = err.code === 1 ? 'Location access was turned down.' : "Couldn't find your location."; },
     { timeout: 10000, maximumAge: 6e5 });
 });
+
+// ---------- the sky view: a night's row morphs into the sky at one moment, then sky.html takes over ----------
+// sky.html runs in a frame over the chart, loaded only when asked for. The morph is drawn here, on the chart's canvas,
+// and ends on exactly the picture the sky view opens with: its camera (a perspective view from the ground, looking at
+// v.az, v.alt with a vertical field of v.fov) and its positions (precessed to today's equinox) are copied below.
+const EQ_YEARS = (Date.now() / DAY + 2440587.5 - 2451545) / 365.25;
+function precess(ra, dec, years) {
+  const a = ra * 15 * D2R, d = dec * D2R;
+  return [mod(ra + (3.075 + 1.336 * Math.sin(a) * Math.tan(d)) * years / 3600, 24), dec + 20.04 * Math.cos(a) * years / 3600];
+}
+function skyAltAz(o, jd) {
+  const [ra, dec] = precess(o.ra, o.dec, EQ_YEARS), H = (lstAt(jd) - ra) * 15 * D2R, dc = dec * D2R;
+  return [Math.asin(sinLat * Math.sin(dc) + cosLat * Math.cos(dc) * Math.cos(H)) * R2D, azimuth(ra, dec, jd)];
+}
+// screen position of a direction in the sky view, and whether it is in front of the camera
+function skyProject(alt, az, v) {
+  const a = alt * D2R, z = (az - v.az) * D2R, p = v.alt * D2R;
+  const x = Math.cos(a) * Math.sin(z), y = Math.sin(a), f = Math.cos(a) * Math.cos(z);
+  const fw = f * Math.cos(p) + y * Math.sin(p), up = y * Math.cos(p) - f * Math.sin(p), k = H / 2 / Math.tan(v.fov / 2 * D2R);
+  return [W / 2 + x / fw * k, H / 2 - up / fw * k, fw > 0.05];
+}
+// the sky view's colours by the Sun's altitude: zenith, horizon, ground
+const SKY_KEYS = [[-18, '#010308', '#070e1b', '#010204'], [-12, '#030915', '#0f1a2f', '#020306'], [-6, '#08142c', '#223354', '#04060a'],
+  [-0.8, '#173058', '#57709d', '#090c12'], [8, '#3a64a6', '#9db6d8', '#1b2129']];
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+function skyColours(sunA) {
+  let i = 0;
+  while (i < SKY_KEYS.length - 2 && sunA > SKY_KEYS[i + 1][0]) i++;
+  const a = SKY_KEYS[i], b = SKY_KEYS[i + 1], t = clamp((sunA - a[0]) / (b[0] - a[0]), 0, 1);
+  return [1, 2, 3].map(k => mix(hexRgb(a[k]), hexRgb(b[k]), t));
+}
+const midDark = d => { const c = CROSS[3][d] || CROSS[2][d] || CROSS[1][d] || CROSS[0][d] || [22, 26]; return clamp((c[0] + c[1]) / 2, T0, T1); };
+const msAt = (d, t) => (jdAt(d, t) - 2440587.5) * DAY;
+let morph = null, skyBack = null;
+const MORPH_MS = matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 1300;
+// where the sky view looks: at the picked object if it's up, else toward the equator
+function skyView(o, d, t) {
+  const v = { az: LAT >= 0 ? 180 : 0, alt: 30, fov: matchMedia('(orientation: portrait)').matches ? 72 : 58 };
+  if (o) { const [alt, az] = skyAltAz(o, jdAt(d, t)); if (alt > 5) { v.az = az; v.alt = clamp(alt, 15, 65); } }
+  return v;
+}
+// each drawn object: from where its line crosses the night's row to where it stands in the sky
+function morphDots(m) {
+  const jd = jdAt(m.d, m.t), dk = Math.pow(clamp((-0.833 - sunAlt(m.d, m.t)) / 17.167, 0, 1), 0.6);
+  m.dk = dk;
+  m.dots = OBJS.filter(isShown).map(o => {
+    const tr = o.transit[m.d], onRow = tr >= T0 && tr <= T1, [alt, az] = skyAltAz(o, jd), [ex, ey, front] = skyProject(alt, az, m.v), isSel = o === m.o;
+    return { o, tr: clamp(tr, T0, T1), a0: onRow ? (isSel ? 1 : 0.2 + 0.8 * o.maxAlt / 90) : 0, ex, ey, front, a1: alt > 0 && front ? (isSel ? 1 : 0.3 + 0.6 * dk) : 0, isSel };
+  });
+}
+function drawMorph() {
+  const m = morph, e = m.p, v = m.v, rowY = Y(m.d + 0.5), tf = Math.tan(v.fov / 2 * D2R), pr = v.alt * D2R;
+  const hy = H / 2 * (1 + Math.tan(pr) / tf), shift = (1 - e) * (rowY - hy); // the horizon starts on the row
+  const [zen, hor, gnd] = skyColours(sunAlt(m.d, m.t));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = clamp(e * 1.5, 0, 1);
+  for (let y = 0; y < H; y += 3) {
+    const yn = 1 - 2 * (y + 1.5 - shift) / H, dy = (yn * tf * Math.cos(pr) + Math.sin(pr)) / Math.hypot(1, yn * tf);
+    const sm = clamp(-dy / 0.16, 0, 1), c = dy < 0 ? mix(hor.map(x => x * 0.45), gnd, sm * sm * (3 - 2 * sm)) : mix(hor, zen, Math.sqrt(dy));
+    ctx.fillStyle = `rgb(${c.map(Math.round).join(',')})`;
+    ctx.fillRect(0, y, W, 3);
+  }
+  // the night's row, lifting off as the horizon
+  ctx.globalAlpha = (1 - e) * clamp(e * 6, 0, 1);
+  ctx.strokeStyle = ACCENT; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, hy + shift); ctx.lineTo(W, hy + shift); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '600 13px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  ctx.fillStyle = 'rgb(142, 155, 176)';
+  ctx.globalAlpha = 0.75 * e * e * (0.45 + 0.55 * m.dk);
+  for (const [name, az] of [['N', 0], ['E', 90], ['S', 180], ['W', 270]]) {
+    const [x, y, front] = skyProject(-3.5, az, v);
+    if (front) ctx.fillText(name, x, y + shift);
+  }
+  ctx.textAlign = 'left';
+  ctx.font = '500 10.5px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  for (const q of m.dots) {
+    const sx = X(q.tr), a = q.a0 + (q.a1 - q.a0) * e;
+    if (a < 0.01) continue;
+    const x = q.front ? sx + (q.ex - sx) * e : sx, y = q.front ? rowY + (q.ey - rowY) * e : rowY;
+    const r = 1.6 + ((q.isSel ? 9.6 : 6) - 1.6) * e, col = q.isSel ? '95, 208, 220' : '230, 237, 247';
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    if (e < 1) { ctx.globalAlpha = a * (1 - e); ctx.fillStyle = `rgb(${col})`; ctx.fill(); }
+    const la = clamp((e - 0.6) / 0.4, 0, 1) * (q.a1 > 0 ? 1 : 0) * (0.45 + 0.55 * m.dk) * (q.isSel ? 1 : 0.66);
+    if (la > 0.01) { ctx.globalAlpha = la; ctx.fillStyle = q.isSel ? ACCENT : 'rgb(223, 230, 240)'; ctx.fillText(q.o.id, x + 11, y + 0.5); }
+  }
+  ctx.globalAlpha = 1;
+}
+// run the morph toward the sky (dir 1) or back to the chart (dir -1), then call done
+function runMorph(dir, done) {
+  const m = morph, t0 = performance.now(), from = m.p;
+  cancelAnimationFrame(m.raf);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / MORPH_MS), u = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    m.p = dir > 0 ? from + (1 - from) * u : from * (1 - u);
+    draw();
+    if (k < 1) m.raf = requestAnimationFrame(step); else done();
+  };
+  m.raf = requestAnimationFrame(step);
+}
+function openSkyAt(d) {
+  if (morph) return;
+  // iPhones share the compass and tilt sensors only when asked during a tap, and this is the tap: asking here lets
+  // the sky view hold the sky in its true position from the start (unless its compass was turned off)
+  try {
+    if (coarse && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'
+      && localStorage.getItem('messier-sky-compass') !== '0') DeviceOrientationEvent.requestPermission().catch(() => {});
+  } catch {}
+  d = clamp(d, 1, N);
+  const o = sel && isShown(sel) ? sel : null, t = o && moment && moment.d === d ? moment.t : midDark(d);
+  if (Y(d + 0.5) < plot.y + 12 || Y(d + 0.5) > plot.y + plot.h - 12) centreOn(d);
+  const v = skyView(o, d, t), f = document.createElement('iframe');
+  const q = new URLSearchParams({ embed: 1, lat: LAT, lon: LON, zone: PLACE.zone, t: Math.round(msAt(d, t)), az: v.az.toFixed(3), alt: v.alt.toFixed(3) });
+  if (o) q.set('obj', o.id);
+  f.id = 'skyframe';
+  f.title = 'Sky view';
+  f.allow = 'accelerometer; gyroscope; magnetometer';
+  f.src = `sky.html?${q}`;
+  document.body.append(f);
+  morph = { d, t, o, v, p: 0, raf: 0, frame: f, ready: false, arrived: false };
+  morphDots(morph);
+  showPanel(null);
+  hoverPt = null; hov = null; $('hover').hidden = true;
+  document.body.classList.add('morphing');
+  try { history.pushState({ sky: true }, ''); } catch {}
+  const reveal = () => { if (morph && morph.arrived && morph.ready) f.classList.add('on'); };
+  morph.reveal = reveal;
+  runMorph(1, () => { morph.arrived = true; reveal(); });
+  setTimeout(() => { if (morph && morph.frame === f) { morph.ready = true; reveal(); } }, MORPH_MS + 6000); // show it even if it never reports in
+}
+// back from the sky view: take up the moment and object it was left on, and morph from where its camera was looking
+function closeSky() {
+  const m = morph, b = skyBack;
+  if (!m || m.closing) return;
+  m.closing = true;
+  skyBack = null;
+  if (b) {
+    const u = (b.t / DAY + 2440587.5 - JD0) * 24 + STD, d = Math.floor((u - T0) / 24) + 1, t = Math.min(u - (d - 1) * 24, T1);
+    if (d >= 1 && d <= N) { m.d = selDay = d; m.t = t; }
+    const o = b.obj ? OBJS.find(x => x.id === b.obj && isShown(x)) : null;
+    sel = o || null;
+    m.o = sel;
+    if (sel) setMoment(m.d, m.t);
+    $('card').hidden = !sel;
+    if (Number.isFinite(b.az) && Number.isFinite(b.alt)) m.v = { az: b.az, alt: clamp(b.alt, -60, 85), fov: Number.isFinite(b.fov) ? b.fov : m.v.fov };
+    if (Y(m.d + 0.5) < plot.y + 12 || Y(m.d + 0.5) > plot.y + plot.h - 12) centreOn(m.d);
+    refreshObjs();
+  }
+  morphDots(m);
+  m.p = 1;
+  draw();
+  m.frame.classList.remove('on');
+  setTimeout(() => m.frame.remove(), 400);
+  setTimeout(() => runMorph(-1, () => {
+    morph = null;
+    document.body.classList.remove('morphing');
+    if (sel) DIALOGS.card.open();
+    redraw();
+  }), m.frame.classList.contains('on') ? 0 : 150);
+}
+window.addEventListener('message', e => {
+  if (!morph || e.source !== morph.frame.contentWindow || !e.data) return;
+  if (e.data.type === 'sky-ready') { morph.ready = true; morph.reveal(); }
+  else if (e.data.type === 'sky-back') { skyBack = e.data; if (history.state && history.state.sky) history.back(); else closeSky(); }
+});
+window.addEventListener('popstate', () => { if (morph) closeSky(); });
+$('skybtn').addEventListener('click', () => openSkyAt(sel && moment ? moment.d : selDay));
+$('c-sky').addEventListener('click', () => openSkyAt(moment.d));
 
 setRange(range);
 selDay = todayRow;
