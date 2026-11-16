@@ -793,6 +793,11 @@ function onRelative(e) {
     // Tipped back past 45° above the horizon it is the top edge again, which by then points behind: the heading turns
     // half a circle though the phone hasn't. So a reading half a turn from the running offset is taken as that, and undone.
     let off = ((360 - h) - e.alpha) * D2R;
+    // Standing upright the phone is at the gimbal lock of alpha and gamma: with the slightest roll the two trade
+    // large, opposite swings as the back crosses the horizon. The heading doesn't swing with them, so alpha alone
+    // would drag the offset left and right. Take out the angle between the top edge's bearing and the back's.
+    const sb = Math.sin(e.beta * D2R), g = e.gamma * D2R;
+    if (Math.abs(sb) > Math.SQRT1_2) off -= Math.atan2(Math.sin(g), Math.cos(g) * sb);
     if (sensor.offC == null) {
       if (Math.abs(e.beta) > 135) off += Math.PI;
       sensor.offC = Math.cos(off); sensor.offS = Math.sin(off);
